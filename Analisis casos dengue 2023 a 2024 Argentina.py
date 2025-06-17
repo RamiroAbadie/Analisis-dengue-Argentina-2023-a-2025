@@ -269,3 +269,101 @@ plt.grid(True)
 plt.show()
 # =======================================================================
 # =======================================================================
+# --- ANÁLISIS 2: COMPARACIÓN DE BROTES AÑO A AÑO ---
+
+print("\nAnálisis 2: Generando comparación de la magnitud de los brotes anuales...")
+
+# Agrupamos por semana y año para ver la curva de cada año
+casos_anuales = df_limpio.groupby(['anio_min', 'sepi_min'])['cantidad'].sum().reset_index()
+
+# Graficamos cada año como una línea de color diferente
+plt.figure(figsize=(18, 8))
+sns.lineplot(data=casos_anuales, x='sepi_min', y='cantidad', hue='anio_min', palette='viridis', lw=2)
+plt.title('Magnitud de los Brotes de Dengue Año a Año', fontsize=16)
+plt.xlabel('Semana Epidemiológica')
+plt.ylabel('Cantidad Total de Casos')
+plt.legend(title='Año')
+plt.grid(True)
+plt.show()
+# =======================================================================
+# =======================================================================
+# --- PREDICCIÓN DE UN NUEVO ESCENARIO ---
+
+# 1. Definimos los datos del escenario que queremos predecir
+datos_a_predecir = {
+    'anio_min': [2025],
+    'id_prov_indec_residencia': [22], # 22: Chaco
+    'id_grupo_etario': [9],          # 9: 25 a 34 años
+    'sepi_min': [15]                   # 15: Semana 15
+}
+
+# 2. Convertimos el diccionario a un DataFrame de pandas, porque el modelo espera este formato
+nuevo_escenario_df = pd.DataFrame(datos_a_predecir)
+
+# 3. Usamos el modelo ya entrenado (.predict()) para hacer la estimación
+prediccion_casos = model.predict(nuevo_escenario_df)
+
+# 4. Mostramos el resultado de una forma clara
+print(f"--- Predicción para el escenario planteado ---")
+print(f"Año: 2025, Provincia: Chaco, Grupo de Edad: 25-34 años, Semana: 15")
+# Usamos int() para redondear, ya que no puede haber "medio caso"
+print(f"El modelo predice una cantidad aproximada de: {int(prediccion_casos[0])} casos.")
+# =======================================================================
+# =======================================================================
+# --- CASO DE USO 1: RIESGO ESTACIONAL ---
+
+# Escenario A: PICO de la temporada (Semana 16)
+escenario_A = {
+    'anio_min': [2025],
+    'id_prov_indec_residencia': [34], # 34: Formosa
+    'id_grupo_etario': [9],          # 9: 25 a 34 años
+    'sepi_min': [16]                   # 16: Semana de alto riesgo
+}
+df_escenario_A = pd.DataFrame(escenario_A)
+prediccion_A = model.predict(df_escenario_A)
+
+# Escenario B: TEMPORADA BAJA (Semana 40)
+escenario_B = {
+    'anio_min': [2025],
+    'id_prov_indec_residencia': [34], # 34: Formosa
+    'id_grupo_etario': [9],          # 9: 25 a 34 años
+    'sepi_min': [40]                   # 40: Semana de bajo riesgo
+}
+df_escenario_B = pd.DataFrame(escenario_B)
+prediccion_B = model.predict(df_escenario_B)
+
+print("--- Comparación de Riesgo Estacional en Formosa ---")
+print(f"Predicción para la SEMANA PICO (16): {int(prediccion_A[0])} casos.")
+print(f"Predicción para la SEMANA BAJA (40): {int(prediccion_B[0])} casos.")
+print("\nUtilidad: El modelo cuantifica el aumento drástico del riesgo durante el otoño, justificando la concentración de esfuerzos en esa época.")
+# =======================================================================
+# =======================================================================
+# --- CASO DE USO 2: RIESGO GEOGRÁFICO ---
+
+# Escenario A: Zona Caliente (Salta) en semana pico
+escenario_A_geo = {
+    'anio_min': [2025],
+    'id_prov_indec_residencia': [66], # 66: Salta
+    'id_grupo_etario': [9],
+    'sepi_min': [16]
+}
+df_escenario_A_geo = pd.DataFrame(escenario_A_geo)
+prediccion_A_geo = model.predict(df_escenario_A_geo)
+
+# Escenario B: Zona Fría (Chubut) en la misma semana
+escenario_B_geo = {
+    'anio_min': [2025],
+    'id_prov_indec_residencia': [26], # 26: Chubut
+    'id_grupo_etario': [9],
+    'sepi_min': [16]
+}
+df_escenario_B_geo = pd.DataFrame(escenario_B_geo)
+prediccion_B_geo = model.predict(df_escenario_B_geo)
+
+
+print("\n--- Comparación de Riesgo Geográfico en Semana 16 ---")
+print(f"Predicción para una provincia del NORTE (Salta): {int(prediccion_A_geo[0])} casos.")
+print(f"Predicción para una provincia del SUR (Chubut): {int(prediccion_B_geo[0])} casos.")
+print("\nUtilidad: El modelo confirma que el riesgo geográfico es un factor determinante, validando la estrategia de focalizar recursos en el norte del país.")
+# =======================================================================
+# =======================================================================
